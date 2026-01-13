@@ -2,20 +2,47 @@ import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
-    const host = request.headers.get('host')
-    const protocol = request.headers.get('x-forwarded-proto') || 'http'
+    const headerList = request.headers
+    const xHost = headerList.get('x-forwarded-host')
+    const xProto = headerList.get('x-forwarded-proto')
+    const host = xHost || headerList.get('host') || 'localhost:3000'
+    const proto = xProto || 'http'
+
+    let origin = `${proto}://${host}`
+
+    // Force https for production domains
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1') || host.includes('0.0.0.0')
+    if (!isLocal && !origin.startsWith('https://')) {
+        origin = `https://${host}`
+    }
+
     const { searchParams } = new URL(request.url)
-    const origin = `${protocol}://${host}`
     const code = searchParams.get('code')
-    // if "next" is in param, use it as the redirect URL
     const next = searchParams.get('next') ?? '/'
+    const role = searchParams.get('role')
+
+    console.log('--- Auth Callback Debug ---')
+    console.log('Host:', host)
+    console.log('Proto:', proto)
+    console.log('Origin:', origin)
+    console.log('Has Code:', !!code)
+    console.log('Role:', role)
 
     if (code) {
-        const supabase = await createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) {
-            const role = searchParams.get('role')
+        try {
+            const supabase = await createClient()
+            console.log('Exchanging code for session...')
+            const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+            if (error) {
+                console.error('Exchange Code Error:', error.message)
+                return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`)
+            }
+
+            console.log('Session exchanged successfully.')
+
             if (role === 'pyme') {
+                console.log('Updating pyme profile...')
                 const { data: { user } } = await supabase.auth.getUser()
                 if (user) {
                     await supabase
@@ -25,23 +52,15 @@ export async function GET(request: Request) {
                 }
             }
 
-            const forwardedHost = request.headers.get('x-forwarded-host')
-            const isLocalEnv = process.env.NODE_ENV === 'development'
-
-            if (isLocalEnv) {
-                return NextResponse.redirect(`${origin}${next}`)
-            } else if (forwardedHost) {
-                // Determine proto for forwarded host, usually https in prod
-                const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
-                return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${next}`)
-            } else {
-                return NextResponse.redirect(`${origin}${next}`)
-            }
-        } else {
-            console.error('Auth Error:', error)
-            return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`)
+            console.log('Redirecting to next:', next)
+            return NextResponse.redirect(`${origin}${next}`)
+        } catch (err) {
+            console.error('Unhandled Callback Exception:', err)
+            const msg = err instanceof Error ? err.message : 'Unknown error'
+            return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(msg)}`)
         }
     }
 
+    console.error('No code provided in callback')
     return NextResponse.redirect(`${origin}/auth/auth-code-error?error=NoCodeProvided`)
 }
