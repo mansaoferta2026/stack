@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: mansaoferta
-        image: mansaoferta:local
-        imagePullPolicy: Never  # Use local image, don't pull from registry
+        image: mansaoferta/app:latest
+        imagePullPolicy: IfNotPresent # Pull from Docker Hub if not available locally
         ports:
         - containerPort: 3000
           name: http

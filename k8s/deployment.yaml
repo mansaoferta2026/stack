@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: mansaoferta
-        image: gcr.io/YOUR_PROJECT_ID/mansaoferta:latest
+        image: mansaoferta/app:latest
         ports:
         - containerPort: 3000
           name: http

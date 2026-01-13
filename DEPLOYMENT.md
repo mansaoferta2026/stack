@@ -61,10 +61,10 @@ docker run -p 3000:3000 \
 
 Visit http://localhost:3000 to verify.
 
-### Tag and Push to GCR
+### Tag and Push to Docker Hub
 ```bash
-docker tag $IMAGE_NAME:$IMAGE_TAG gcr.io/$PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG
-docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG
+docker tag $IMAGE_NAME:$IMAGE_TAG mansaoferta/app:$IMAGE_TAG
+docker push mansaoferta/app:$IMAGE_TAG
 ```
 
 ---
@@ -117,7 +117,7 @@ gcloud compute addresses describe mansaoferta-ip --global
 ### Update Deployment Image
 Edit `k8s/deployment.yaml`:
 ```yaml
-image: gcr.io/YOUR_PROJECT_ID/mansaoferta:latest
+image: mansaoferta/app:latest
 ```
 
 Replace `YOUR_PROJECT_ID` with your actual project ID.
@@ -207,14 +207,14 @@ Once DNS propagates and SSL is active:
 
 ### Build New Image
 ```bash
-docker build -t gcr.io/$PROJECT_ID/$IMAGE_NAME:v2 .
-docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:v2
+docker build -t mansaoferta/app:v2 .
+docker push mansaoferta/app:v2
 ```
 
 ### Update Deployment
 ```bash
 kubectl set image deployment/mansaoferta \
-  mansaoferta=gcr.io/$PROJECT_ID/$IMAGE_NAME:v2
+  mansaoferta=mansaoferta/app:v2
 ```
 
 ### Rollout Status
@@ -314,7 +314,7 @@ gcloud container clusters delete mansaoferta-cluster \
 gcloud compute addresses delete mansaoferta-ip --global
 
 # Delete Docker images
-gcloud container images delete gcr.io/$PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG
+docker rmi mansaoferta/app:$IMAGE_TAG
 ```
 
 ---

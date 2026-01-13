@@ -16,17 +16,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-actual-anon-key
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-### 2. Build and Run
+### 2. Pull and Run
 
 ```powershell
-# Build and start the container
+# Pull the latest image from Docker Hub
+docker-compose pull
+
+# Start the container
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
-
-# Stop the container
-docker-compose down
 ```
 
 ### 3. Access Application
@@ -38,10 +38,10 @@ Open your browser to: **http://localhost:3000**
 ## Commands Reference
 
 ```powershell
-# Build the image
-docker-compose build
+# Pull latest image
+docker-compose pull
 
-# Start in foreground (see logs)
+# Start in foreground
 docker-compose up
 
 # Start in background
@@ -56,8 +56,8 @@ docker-compose down
 # Stop and remove volumes
 docker-compose down -v
 
-# Rebuild and restart
-docker-compose up -d --build
+# Restart
+docker-compose up -d
 
 # Check container status
 docker-compose ps
@@ -71,11 +71,11 @@ docker-compose exec mansaoferta sh
 ## Updating the Application
 
 ```powershell
-# 1. Pull latest code
-git pull
+# 1. Pull latest image
+docker-compose pull
 
-# 2. Rebuild and restart
-docker-compose up -d --build
+# 2. Restart
+docker-compose up -d
 ```
 
 ---
