@@ -11,6 +11,17 @@ export async function GET(request: Request) {
         const supabase = await createClient()
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
+            const role = searchParams.get('role')
+            if (role === 'pyme') {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    await supabase
+                        .from('profiles')
+                        .update({ role: 'pyme' })
+                        .eq('id', user.id)
+                }
+            }
+
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'
             if (isLocalEnv) {
@@ -21,9 +32,11 @@ export async function GET(request: Request) {
             } else {
                 return NextResponse.redirect(`${origin}${next}`)
             }
+        } else {
+            console.error('Auth Error:', error)
+            return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`)
         }
     }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+    return NextResponse.redirect(`${origin}/auth/auth-code-error?error=NoCodeProvided`)
 }

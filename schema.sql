@@ -9,6 +9,14 @@ create table profiles (
   name text,
   role user_role default 'consumer',
   avatar_url text,
+  -- Pyme business profile fields
+  company_name text,
+  company_logo_url text,
+  address text,
+  city text,
+  phone text,
+  mercadopago_access_token text,
+  profile_completed boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -32,8 +40,8 @@ create policy "Users can update own profile."
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, name, avatar_url)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
+  insert into public.profiles (id, email, name, role, avatar_url)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name', COALESCE((new.raw_user_meta_data->>'role')::user_role, 'consumer'), new.raw_user_meta_data->>'avatar_url');
   return new;
 end;
 $$ language plpgsql security definer;
