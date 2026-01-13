@@ -12,7 +12,11 @@ export async function signInWithGoogle(formData: FormData) {
     // Ideally we put it in options.queryParams => Supabase Auth passes it back to callback.
     // OR options.data => It gets stored in raw_user_meta_data on signup! This is what we want.
 
-    const host = (await headers()).get('host') || 'localhost:3000'
+    // Priority 1: x-forwarded-host (passed by proxies like GKE Ingress)
+    // Priority 2: host header
+    // Priority 3: fallback to localhost
+    const host = (await headers()).get('x-forwarded-host') || (await headers()).get('host') || 'localhost:3000'
+
     let proto = (await headers()).get('x-forwarded-proto') || 'http'
 
     // Smart proto detection: if host is not localhost, it's almost certainly https in prod
