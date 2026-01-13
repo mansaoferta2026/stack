@@ -12,19 +12,25 @@ export async function signInWithGoogle(formData: FormData) {
     // Ideally we put it in options.queryParams => Supabase Auth passes it back to callback.
     // OR options.data => It gets stored in raw_user_meta_data on signup! This is what we want.
 
-    // Priority 1: x-forwarded-host (passed by proxies like GKE Ingress)
-    // Priority 2: host header
-    // Priority 3: fallback to localhost
-    const host = (await headers()).get('x-forwarded-host') || (await headers()).get('host') || 'localhost:3000'
+    const headerList = await headers()
+    const xHost = headerList.get('x-forwarded-host')
+    const xProto = headerList.get('x-forwarded-proto')
+    const host = xHost || headerList.get('host') || 'localhost:3000'
+    const proto = xProto || 'http'
 
-    let proto = (await headers()).get('x-forwarded-proto') || 'http'
+    let baseUrl = `${proto}://${host}`
 
-    // Smart proto detection: if host is not localhost, it's almost certainly https in prod
-    if (!host.includes('localhost') && !host.includes('127.0.0.1') && !host.includes('0.0.0.0')) {
-        proto = 'https'
+    // If host is a real domain (not local), force https and ignore the detected proto if it's insecure
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1') || host.includes('0.0.0.0')
+    if (!isLocal) {
+        baseUrl = `https://${host}`
+    } else if (process.env.NEXT_PUBLIC_BASE_URL && !process.env.NEXT_PUBLIC_BASE_URL.includes('localhost')) {
+        // Fallback to env var if we are detected as local but a production URL is configured
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     }
 
-    const baseUrl = `${proto}://${host}`
+    // Standardize URL
+    baseUrl = baseUrl.replace(/\/$/, '')
 
     console.log('--- Auth Debug ---')
     console.log('Detected Host:', host)
